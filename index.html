@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiro Parabólico — Simulador Arcade</title>
+  <meta name="description" content="Simulador interactivo de tiro parabólico con estética arcade retro. Ajusta ángulo y velocidad, visualiza la trayectoria y estudia las fórmulas de cinemática.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- KaTeX for LaTeX-style formulas -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Background Stars -->
+<canvas id="stars-bg"></canvas>
+
+<!-- Header -->
+<header id="app-header">
+  <div class="header-text">
+    <h1>🎮 TIRO PARABÓLICO 🎮</h1>
+    <p class="subtitle">▸ SIMULADOR ARCADE — FÍSICA EN ACCIÓN ◂</p>
+  </div>
+  <div class="theme-toggle">
+    <span class="toggle-label">🌙</span>
+    <div class="toggle-switch" id="theme-toggle" role="button" aria-label="Cambiar tema claro/oscuro" tabindex="0">
+      <div class="toggle-knob"></div>
+    </div>
+    <span class="toggle-label">☀️</span>
+  </div>
+</header>
+
+<!-- Main Content -->
+<div id="main-wrapper">
+  <div id="left-column">
+    <!-- Canvas -->
+    <div id="canvas-section">
+      <canvas id="simCanvas" width="900" height="450"></canvas>
+      <div id="challenge-overlay" class="hidden">
+        <div class="chal-text">🎯 OBJETIVO: <br><span id="challenge-target" class="target-val">GOLPEAR GLOBO</span></div>
+        <button id="btn-relocate" class="btn-arcade btn-small">↻ REUBICAR</button>
+      </div>
+      <div id="hud-overlay">
+        <div><span class="hud-label">⏱ TIEMPO:</span><span class="hud-value" id="hud-time">0.00 s</span></div>
+        <div><span class="hud-label">↕ ALTURA:</span><span class="hud-value" id="hud-height">0.00 m</span></div>
+        <div><span class="hud-label">↔ DISTANCIA:</span><span class="hud-value" id="hud-dist">0.00 m</span></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="mode-controls">
+      <button class="btn-mode active" id="btn-mode-free">MODO LIBRE</button>
+      <button class="btn-mode" id="btn-mode-dist">RETO ALCANCE</button>
+      <button class="btn-mode" id="btn-mode-balloon">RETO GLOBO</button>
+    </div>
+
+    <div id="controls-bar">
+      <div class="slider-group">
+        <label for="slider-angle">🎯 ÁNGULO:</label>
+        <div class="input-row">
+          <input type="range" id="slider-angle" min="0" max="90" value="45" step="1">
+          <input type="number" id="num-angle" class="num-input" min="0" max="90" value="45" step="1">
+        </div>
+      </div>
+      <div class="slider-group">
+        <label for="slider-speed">💨 VELOCIDAD:</label>
+        <div class="input-row">
+          <input type="range" id="slider-speed" min="1" max="100" value="50" step="1">
+          <input type="number" id="num-speed" class="num-input" min="1" max="100" value="50" step="1">
+        </div>
+      </div>
+      <button class="btn-arcade" id="btn-fire">🔥 ¡DISPARAR!</button>
+      <button class="btn-arcade" id="btn-reset">↺ REINICIAR</button>
+    </div>
+  </div>
+
+  <!-- Formulas Panel -->
+  <aside id="formulas-panel">
+    <h2>◈ DATOS DE MISIÓN ◈</h2>
+
+    <div class="formula-row">
+      <span class="f-name">Posición horizontal</span>
+      <span class="f-expr" id="f1"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Posición vertical</span>
+      <span class="f-expr" id="f2"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Velocidad horizontal</span>
+      <span class="f-expr" id="f3"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Velocidad vertical</span>
+      <span class="f-expr" id="f4"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Altura máxima</span>
+      <span class="f-expr" id="f5"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Alcance máximo</span>
+      <span class="f-expr" id="f6"></span>
+    </div>
+    <div class="formula-row">
+      <span class="f-name">Tiempo de vuelo</span>
+      <span class="f-expr" id="f7"></span>
+    </div>
+
+    <div class="calc-section">
+      <h3>◈ VALORES CALCULADOS ◈</h3>
+      <div class="calc-row"><span class="c-label">H máx</span><span class="c-value" id="calc-H">— m</span></div>
+      <div class="calc-row"><span class="c-label">Alcance R</span><span class="c-value" id="calc-R">— m</span></div>
+      <div class="calc-row"><span class="c-label">Tiempo T</span><span class="c-value" id="calc-T">— s</span></div>
+      <div class="calc-row"><span class="c-label">vₓ</span><span class="c-value" id="calc-vx">— m/s</span></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Render KaTeX formulas after library loads -->
+<script>
+  function renderFormulas() {
+    if (typeof katex === 'undefined') {
+      setTimeout(renderFormulas, 100);
+      return;
+    }
+    var formulas = {
+      f1: 'x(t) = v_0 \\cdot \\cos(\\theta) \\cdot t',
+      f2: 'y(t) = v_0 \\cdot \\sin(\\theta) \\cdot t - \\tfrac{1}{2}\\,g\\,t^2',
+      f3: 'v_x = v_0 \\cdot \\cos(\\theta)',
+      f4: 'v_y(t) = v_0 \\cdot \\sin(\\theta) - g \\cdot t',
+      f5: 'H = \\dfrac{\\left(v_0 \\cdot \\sin(\\theta)\\right)^2}{2g}',
+      f6: 'R = \\dfrac{v_0^{\\,2} \\cdot \\sin(2\\theta)}{g}',
+      f7: 'T = \\dfrac{2\\,v_0 \\cdot \\sin(\\theta)}{g}'
+    };
+
+    var color = getComputedStyle(document.documentElement)
+                  .getPropertyValue('--katex-color').trim() || '#39ff14';
+
+    for (var id in formulas) {
+      var el = document.getElementById(id);
+      if (el) {
+        katex.render(formulas[id], el, {
+          throwOnError: false,
+          displayMode: false,
+          output: 'html'
+        });
+        /* Apply theme color to KaTeX output */
+        el.style.color = color;
+      }
+    }
+  }
+  renderFormulas();
+
+  /* Re-color formulas on theme change */
+  var observer = new MutationObserver(function () {
+    setTimeout(function () {
+      var color = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--katex-color').trim();
+      var exprs = document.querySelectorAll('.f-expr');
+      for (var i = 0; i < exprs.length; i++) {
+        exprs[i].style.color = color;
+      }
+    }, 60);
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
+
+<!-- App scripts (order matters: physics → renderer → app) -->
+<script src="physics.js"></script>
+<script src="renderer.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
